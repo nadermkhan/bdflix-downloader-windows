@@ -1,0 +1,41 @@
+name: Build and Release BDFlix Win32
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup MSVC Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Compile BDFlixWin32
+      # We add /O2 for release-level optimization and /out to name the executable.
+      run: |
+        cl.exe /EHsc /std:c++20 /W4 /O2 BDFlixWin32.cpp /link user32.lib gdi32.lib comctl32.lib dwmapi.lib winhttp.lib /out:BDFlixWin32.exe
+
+    - name: Upload Executable Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: BDFlixWin32-Release
+        path: BDFlixWin32.exe
+
+    - name: Create GitHub Release
+      # Triggers the release using the exact same softprops action from your iOS workflow
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v3.0.${{ github.run_number }}
+        name: BDFlix Win32 v3.0.${{ github.run_number }}
+        files: BDFlixWin32.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
